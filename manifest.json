@@ -39,14 +39,14 @@
   ],
   "screenshots": [
     {
-      "src": "icons/screnshoot-1.png",
+      "src": "icons/screenshot-1.png",
       "sizes": "1080x2400",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Tampilan Mobile Tracker Anime"
     },
     {
-      "src": "icons/screnshoot-2.png",
+      "src": "icons/screenshot-2.png",
       "sizes": "720x1600",
       "type": "image/png",
       "form_factor": "narrow",
