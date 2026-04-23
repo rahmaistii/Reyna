@@ -12,17 +12,17 @@
   "lang": "id",
   "icons": [
     {
-      "src": "icons/icon-192x192-A.png",
-      "sizes": "192x192",
+      "src": "icons/anime 2-1024x1024.png",
+      "sizes": "1024x1024",
       "type": "image/png"
     },
     {
-      "src": "icons/icon-512x512-B.png",
+      "src": "icons/anime 2-1024x1024.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "icons/icone-anime 1024x1024.png",
+      "src": "icons/anime 2-1024x1024.png",
       "sizes": "1024x1024",
       "type": "image/png",
       "purpose": "any maskable"
@@ -47,7 +47,7 @@
       "url": "./index.html",
       "icons": [
         {
-          "src": "icons/icone-anime 1024x1024.png",
+          "src": "icons/anime 2-1024x1024.png",
           "sizes": "1024x1024"
         }
       ]
