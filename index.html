@@ -5,7 +5,187 @@ const urlsToCache = [
   `${BASE_URL}`,
   `${BASE_URL}index.html`,
   `${BASE_URL}offline.html`,
-  `${BASE_URL}assets/style.css`,
+  `${BASE_URL}assets/style.css`,<!DOCTYPE html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#4F46E5" />
+  
+  <link rel="manifest" href="manifest.json" />
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="icon" href="icons/anime 2-1024x1024.png" type="image/png" />
+  <title>Anime List - Are you ready</title>
+
+  <style>
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: 'Inter', sans-serif;
+    }
+    .main-card {
+      background: #1e293b;
+      border: 1px solid #334155;
+    }
+    /* Menjaga aspek rasio gambar agar tidak pecah */
+    .anime-poster {
+      aspect-ratio: 2/3;
+      object-fit: cover;
+    }
+  </style>
+</head>
+
+<body class="min-h-screen">
+
+  <header class="bg-indigo-600 p-6 text-center shadow-xl">
+    <h1 class="text-3xl font-bold">Anime List</h1>
+    <p class="text-indigo-200">Aplikasi tracker anime personal berbasis progressive Web App</p>
+  </header>
+
+  <main class="max-w-6xl mx-auto p-6">
+    <section class="main-card p-6 rounded-2xl mb-8">
+      <h2 class="text-xl font-bold mb-2">Okaerinasai!</h2>
+      <p class="text-slate-400 mb-4">
+        waktunya marathon nieh! Mau nonton apa hari ini?
+      </p>
+    </section>
+
+    <section class="mb-6">
+      <div class="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
+        <input type="text" id="searchInput" onkeyup="searchAnime()" placeholder="Cari di list tontonan..." 
+          class="w-full md:w-64 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+        
+        <div class="flex gap-2">
+          <button onclick="searchFromAPI()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-sm font-bold transition">
+            + Cari & Tambah Anime
+          </button>
+          <button onclick="exportData()" class="bg-slate-700 hover:bg-slate-600 px-3 py-2 rounded-lg text-xs">Backup</button>
+        </div>
+      </div>
+
+      <div id="animeGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+        </div>
+    </section>
+  </main>
+
+  <footer class="text-center py-10 border-t border-slate-800 text-slate-500 text-sm">
+    <p>© 2026 Marathon yuks • Anime List</p>
+  </footer>
+
+  <script>
+    // --- DATA MANAGEMENT ---
+    let myAnimeList = JSON.parse(localStorage.getItem('myAnimeData')) || [];
+
+    function save() {
+      localStorage.setItem('myAnimeData', JSON.stringify(myAnimeList));
+      render();
+    }
+
+    // --- JIKAN API SEARCH ---
+    async function searchFromAPI() {
+      const query = prompt("Cari anime (contoh: Solo Leveling):");
+      if (!query || query.length < 3) return;
+
+      try {
+        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=1`);
+        const { data } = await res.json();
+        
+        if (data && data.length > 0) {
+          const a = data[0];
+          const newAnime = {
+            id: a.mal_id,
+            title: a.title,
+            image: a.images.jpg.large_image_url,
+            status: 'Direncanakan',
+            episodes: 0,
+            total: a.episodes || '?'
+          };
+          
+          if (!myAnimeList.some(item => item.id === newAnime.id)) {
+            myAnimeList.push(newAnime);
+            save();
+          } else {
+            alert("Sudah ada di daftar!");
+          }
+        }
+      } catch (err) {
+        alert("Gagal mengambil data. Coba lagi nanti.");
+      }
+    }
+
+    // --- RENDERER ---
+    function render(filter = '') {
+      const grid = document.getElementById('animeGrid');
+      grid.innerHTML = '';
+      
+      const filtered = myAnimeList.filter(a => a.title.toLowerCase().includes(filter.toLowerCase()));
+
+      filtered.forEach(anime => {
+        grid.innerHTML += `
+          <div class="main-card rounded-xl overflow-hidden flex flex-col shadow-lg border border-slate-700">
+            <img src="${anime.image}" class="anime-poster w-full" alt="Poster">
+            <div class="p-3 flex-grow">
+              <h3 class="text-sm font-bold line-clamp-2 mb-2 h-10">${anime.title}</h3>
+              <div class="flex items-center justify-between bg-black/30 p-2 rounded text-[10px] mb-2">
+                <span>Ep: ${anime.episodes}/${anime.total}</span>
+                <div class="flex gap-1">
+                  <button onclick="updateEp(${anime.id}, 1)" class="bg-indigo-600 px-2 rounded">+</button>
+                  <button onclick="updateEp(${anime.id}, -1)" class="bg-slate-700 px-2 rounded">-</button>
+                </div>
+              </div>
+              <select onchange="updateStatus(${anime.id}, this.value)" class="w-full bg-slate-900 text-[10px] p-1 rounded border-none outline-none">
+                <option value="Direncanakan" ${anime.status==='Direncanakan'?'selected':''}>Plan</option>
+                <option value="Sedang Ditonton" ${anime.status==='Sedang Ditonton'?'selected':''}>Watching</option>
+                <option value="Selesai" ${anime.status==='Selesai'?'selected':''}>Done</option>
+              </select>
+            </div>
+            <button onclick="removeAnime(${anime.id})" class="text-[10px] text-red-400 py-2 hover:bg-red-500/10 transition">Hapus</button>
+          </div>
+        `;
+      });
+    }
+
+    // --- FUNGSI UPDATE ---
+    function updateEp(id, change) {
+      const a = myAnimeList.find(i => i.id === id);
+      if(a) { a.episodes = Math.max(0, a.episodes + change); save(); }
+    }
+    function updateStatus(id, val) {
+      const a = myAnimeList.find(i => i.id === id);
+      if(a) { a.status = val; save(); }
+    }
+    function removeAnime(id) {
+      if(confirm('Hapus?')) { myAnimeList = myAnimeList.filter(i => i.id !== id); save(); }
+    }
+    function searchAnime() {
+      render(document.getElementById('searchInput').value);
+    }
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myAnimeList));
+      const a = document.createElement('a');
+      a.setAttribute("href", dataStr);
+      a.setAttribute("download", "anime-list.json");
+      a.click();
+    }
+
+    // --- SERVICE WORKER REGISTRATION (Sesuai Codingan Awal Kamu) ---
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js')
+        .then(() => console.log('SW registered!'))
+        .catch(err => console.error('SW gagal:', err));
+    }
+
+    // Load Data awal
+    render();
+  </script>
+
+</body>
+</html>
   `${BASE_URL}manifest.json`,
   `${BASE_URL}icons/icone-anime 1024x1024.png`,
   `${BASE_URL}icons/icone-anime 1024x1024.png`,
