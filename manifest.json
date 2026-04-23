@@ -1,12 +1,12 @@
 {
-  "id": "./",
-  "name": "PWA Template Responsif",
-  "short_name": "PWA Demo",
-  "description": "Aplikasi PWA responsif untuk demonstrasi template dasar Progressive Web App dengan dukungan offline dan installable.",
+  "id": "/anime-list-tracker",
+  "name": "Anime List Tracker",
+  "short_name": "Anime List",
+  "description": "Aplikasi tracker anime personal berbasis progressive Web App.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#4F46E5",
+  "background_color": "#0f172a",
   "theme_color": "#4F46E5",
   "orientation": "portrait",
   "lang": "id",
@@ -20,6 +20,12 @@
       "src": "icons/icon-512x512-B.png",
       "sizes": "512x512",
       "type": "image/png"
+    },
+    {
+      "src": "icons/icone-anime 1024x1024.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any maskable"
     }
   ],
   "screenshots": [
@@ -41,8 +47,8 @@
       "url": "./index.html",
       "icons": [
         {
-          "src": "icons/icon-192x192-A.png",
-          "sizes": "192x192"
+          "src": "icons/icone-anime 1024x1024.png",
+          "sizes": "1024x1024"
         }
       ]
     }
