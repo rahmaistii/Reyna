@@ -11,7 +11,6 @@
         .anime-card:hover { transform: scale(1.02); transition: 0.3s; }
         .modal { transition: opacity 0.25s ease; }
         body.modal-active { overflow: hidden; }
-        /* Style tambahan untuk tombol nonton */
         .btn-watch { background-color: #ef4444; transition: 0.2s; }
         .btn-watch:hover { background-color: #dc2626; }
     </style>
@@ -28,13 +27,13 @@
 
         <header class="text-center mb-10 mt-10">
             <h1 class="text-4xl font-bold text-indigo-400 mb-2">My Anime Hub</h1>
-            <p class="text-gray-400">Cari, Koleksi, dan Streaming Anime Favoritmu</p>
+            <p class="text-gray-400">Cari, Koleksi, dan Streaming Anime</p>
         </header>
 
         <div class="flex gap-2 mb-10">
-            <input id="searchInput" type="text" placeholder="Cari anime (Lalu tekan Enter atau klik Cari)..." 
-                class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500">
-            <button onclick="searchAnime()" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold">
+            <input id="searchInput" type="text" placeholder="Ketik judul anime lalu tekan Enter..." 
+                class="w-full p-3 rounded-lg bg-gray-800 border border-gray-700 focus:outline-none focus:border-indigo-500 text-white">
+            <button onclick="searchAnime()" id="searchBtn" class="bg-indigo-600 hover:bg-indigo-700 px-6 py-3 rounded-lg font-bold">
                 Cari
             </button>
         </div>
@@ -50,9 +49,9 @@
                 <h2 class="text-2xl font-bold">Monitor Watchlist</h2>
                 <div class="flex gap-4 text-sm overflow-x-auto w-full md:w-auto pb-2">
                     <button onclick="filterWatchlist('all')" class="hover:text-indigo-400 whitespace-nowrap">Semua</button>
-                    <button onclick="filterWatchlist('Sedang Ditonton')" class="hover:text-indigo-400 text-yellow-400 font-medium text-xs whitespace-nowrap">Sedang Ditonton</button>
-                    <button onclick="filterWatchlist('Selesai')" class="hover:text-indigo-400 text-green-400 font-medium text-xs whitespace-nowrap">Selesai</button>
-                    <button onclick="filterWatchlist('Rekomendasi')" class="hover:text-indigo-400 text-blue-400 font-medium text-xs whitespace-nowrap">Rekomendasi</button>
+                    <button onclick="filterWatchlist('Sedang Ditonton')" class="text-yellow-400 font-medium text-xs whitespace-nowrap">Sedang Ditonton</button>
+                    <button onclick="filterWatchlist('Selesai')" class="text-green-400 font-medium text-xs whitespace-nowrap">Selesai</button>
+                    <button onclick="filterWatchlist('Rekomendasi')" class="text-blue-400 font-medium text-xs whitespace-nowrap">Rekomendasi</button>
                 </div>
             </div>
             <div id="watchlistContainer" class="grid grid-cols-2 md:grid-cols-4 gap-6"></div>
@@ -65,7 +64,7 @@
             <div class="modal-content py-4 text-left px-6">
                 <div class="flex justify-between items-center pb-3 border-b border-gray-700">
                     <p class="text-xl font-bold text-indigo-400"><i class="fas fa-book mr-2"></i>Koleksi Tersimpan</p>
-                    <div class="modal-close cursor-pointer z-50" onclick="toggleModal()">
+                    <div class="modal-close cursor-pointer" onclick="toggleModal()">
                         <i class="fas fa-times text-white"></i>
                     </div>
                 </div>
@@ -80,15 +79,13 @@
     <script>
         let myWatchlist = JSON.parse(localStorage.getItem('myAnimeList')) || [];
 
-        // Fitur Enter untuk mencari
-        document.getElementById('searchInput').addEventListener('keypress', function (e) {
+        // Fitur Enter
+        document.getElementById('searchInput').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') searchAnime();
         });
 
-        // Fungsi Link Streaming
         function watchAnime(title) {
             const cleanTitle = encodeURIComponent(title);
-            // Mengarahkan ke pencarian streaming Sub Indo
             const streamUrl = `https://www.google.com/search?q=nonton+anime+${cleanTitle}+sub+indo`;
             window.open(streamUrl, '_blank');
         }
@@ -105,42 +102,47 @@
             const query = document.getElementById('searchInput').value;
             const container = document.getElementById('searchResults');
             const section = document.getElementById('searchSection');
+            const btn = document.getElementById('searchBtn');
             
             if (!query) return;
+
             section.classList.remove('hidden');
-            container.innerHTML = `<p class="col-span-full text-center py-5">Mencari...</p>`;
+            container.innerHTML = `<p class="col-span-full text-center py-5">Mencari anime "${query}"...</p>`;
+            btn.disabled = true;
 
             try {
-                const response = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=4`);
+                // Menambahkan delay kecil untuk menghindari Rate Limit API
+                const response = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(query)}&limit=8`);
                 const data = await response.json();
-                container.innerHTML = '';
 
+                if (!data.data || data.data.length === 0) {
+                    container.innerHTML = `<p class="col-span-full text-center text-yellow-500 py-5">Anime tidak ditemukan. Coba judul lain.</p>`;
+                    return;
+                }
+
+                container.innerHTML = '';
                 data.data.forEach(anime => {
-                    const titleEscaped = anime.title.replace(/'/g, "\\'");
+                    const titleEsc = anime.title.replace(/'/g, "\\'");
                     container.innerHTML += `
                         <div class="bg-gray-800 rounded-lg overflow-hidden border border-gray-700 p-2 anime-card shadow-lg">
-                            <img src="${anime.images.jpg.image_url}" class="w-full h-40 object-cover rounded shadow">
+                            <img src="${anime.images.jpg.image_url}" class="w-full h-40 object-cover rounded shadow" onerror="this.src='https://via.placeholder.com/225x315?text=No+Image'">
                             <h3 class="font-bold text-[11px] mt-2 truncate">${anime.title}</h3>
-                            
-                            <button onclick="watchAnime('${titleEscaped}')" 
-                                class="w-full mt-2 py-1.5 text-[10px] btn-watch rounded font-bold text-white uppercase">
-                                <i class="fas fa-play mr-1"></i> Nonton
-                            </button>
-
-                            <button onclick="addToWatchlist('${titleEscaped}', '${anime.images.jpg.image_url}')" 
-                                class="w-full mt-1 py-1.5 text-[10px] bg-indigo-600 rounded font-bold hover:bg-indigo-500 uppercase">
-                                <i class="fas fa-plus mr-1"></i> Koleksi
-                            </button>
+                            <button onclick="watchAnime('${titleEsc}')" class="w-full mt-2 py-1.5 text-[10px] btn-watch rounded font-bold text-white uppercase"><i class="fas fa-play mr-1"></i> Nonton</button>
+                            <button onclick="addToWatchlist('${titleEsc}', '${anime.images.jpg.image_url}')" class="w-full mt-1 py-1.5 text-[10px] bg-indigo-600 rounded font-bold hover:bg-indigo-500 uppercase"><i class="fas fa-plus mr-1"></i> Koleksi</button>
                         </div>
                     `;
                 });
-            } catch (e) { container.innerHTML = '<p class="col-span-full text-red-500 text-center">Gagal memuat data.</p>'; }
+            } catch (error) {
+                console.error(error);
+                container.innerHTML = `<p class="col-span-full text-center text-red-500 py-5">Gagal terhubung ke server API. Periksa koneksi internet atau coba lagi nanti.</p>`;
+            } finally {
+                btn.disabled = false;
+            }
         }
 
         function addToWatchlist(title, img) {
             if (myWatchlist.some(a => a.title === title)) return alert('Sudah ada di koleksi!');
-            const newAnime = { title, img, status: 'Rekomendasi' };
-            myWatchlist.push(newAnime);
+            myWatchlist.push({ title, img, status: 'Rekomendasi' });
             saveAndRender();
         }
 
@@ -171,38 +173,30 @@
             const filteredList = filter === 'all' ? myWatchlist : myWatchlist.filter(a => a.status === filter);
 
             if (filteredList.length === 0) {
-                container.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-10">Kategori "${filter}" masih kosong.</p>`;
+                container.innerHTML = `<p class="col-span-full text-center text-gray-500 italic py-10">Belum ada koleksi di sini.</p>`;
+                return;
             }
 
             filteredList.forEach((anime) => {
                 const realIndex = myWatchlist.findIndex(a => a.title === anime.title);
-                const titleEscaped = anime.title.replace(/'/g, "\\'");
+                const titleEsc = anime.title.replace(/'/g, "\\'");
                 const statusColor = anime.status === 'Selesai' ? 'text-green-400 border-green-900 bg-green-900/20' : 
                                    anime.status === 'Sedang Ditonton' ? 'text-yellow-400 border-yellow-900 bg-yellow-900/20' : 
                                    'text-blue-400 border-blue-900 bg-blue-900/20';
                 
                 container.innerHTML += `
                     <div class="anime-card bg-gray-800 rounded-xl overflow-hidden border border-gray-700 shadow-xl">
-                        <img src="${anime.img}" class="w-full h-48 object-cover shadow-inner">
+                        <img src="${anime.img}" class="w-full h-48 object-cover">
                         <div class="p-3">
                             <h3 class="font-bold text-xs truncate mb-2">${anime.title}</h3>
-                            
-                            <button onclick="watchAnime('${titleEscaped}')" 
-                                class="w-full mb-3 py-1.5 text-[10px] btn-watch rounded font-bold text-white uppercase">
-                                <i class="fas fa-play mr-1"></i> Streaming
-                            </button>
-
-                            <span class="inline-block px-2 py-0.5 rounded text-[8px] font-bold border ${statusColor} mb-3 uppercase">
-                                ${anime.status}
-                            </span>
-                            
-                            <select onchange="updateStatus(${realIndex}, this.value)" class="w-full bg-gray-900 text-[10px] p-2 rounded border border-gray-600 mb-2 focus:border-indigo-500">
+                            <button onclick="watchAnime('${titleEsc}')" class="w-full mb-3 py-1.5 text-[10px] btn-watch rounded font-bold text-white uppercase"><i class="fas fa-play mr-1"></i> Streaming</button>
+                            <span class="inline-block px-2 py-0.5 rounded text-[8px] font-bold border ${statusColor} mb-3 uppercase">${anime.status}</span>
+                            <select onchange="updateStatus(${realIndex}, this.value)" class="w-full bg-gray-900 text-[10px] p-2 rounded border border-gray-600 mb-2">
                                 <option value="Rekomendasi" ${anime.status === 'Rekomendasi' ? 'selected' : ''}>Rekomendasi</option>
                                 <option value="Sedang Ditonton" ${anime.status === 'Sedang Ditonton' ? 'selected' : ''}>Sedang Ditonton</option>
                                 <option value="Selesai" ${anime.status === 'Selesai' ? 'selected' : ''}>Selesai</option>
                             </select>
-
-                            <button onclick="removeAnime(${realIndex})" class="w-full text-[9px] text-red-500 hover:text-red-300 font-bold mt-1 uppercase">Hapus List</button>
+                            <button onclick="removeAnime(${realIndex})" class="w-full text-[9px] text-red-500 font-bold mt-1 uppercase">Hapus</button>
                         </div>
                     </div>
                 `;
@@ -212,28 +206,22 @@
         function renderModalList() {
             const modalList = document.getElementById('modalList');
             modalList.innerHTML = myWatchlist.length === 0 ? '<p class="text-center text-gray-500 py-4">Kosong</p>' : '';
-            
             myWatchlist.forEach((anime, index) => {
-                const titleEscaped = anime.title.replace(/'/g, "\\'");
+                const titleEsc = anime.title.replace(/'/g, "\\'");
                 modalList.innerHTML += `
                     <div class="flex items-center gap-3 bg-gray-800 p-2 rounded-lg border border-gray-700">
                         <img src="${anime.img}" class="w-12 h-16 object-cover rounded">
                         <div class="flex-1">
                             <p class="text-xs font-bold truncate w-32">${anime.title}</p>
-                            <button onclick="watchAnime('${titleEscaped}')" class="text-red-400 text-[10px] font-bold uppercase hover:underline">Nonton</button>
+                            <button onclick="watchAnime('${titleEsc}')" class="text-red-400 text-[10px] font-bold uppercase">Nonton</button>
                         </div>
-                        <button onclick="removeAnime(${index})" class="text-red-500 p-2 text-xs">
-                            <i class="fas fa-trash"></i>
-                        </button>
+                        <button onclick="removeAnime(${index})" class="text-red-500 p-2 text-xs"><i class="fas fa-trash"></i></button>
                     </div>
                 `;
             });
         }
 
-        function filterWatchlist(status) {
-            renderWatchlist(status);
-        }
-
+        function filterWatchlist(status) { renderWatchlist(status); }
         renderWatchlist();
     </script>
 </body>
