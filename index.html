@@ -1,227 +1,74 @@
-<!DOCTYPE html>
-<html lang="id">
+const CACHE_NAME = "pwa-template-v2";
+const BASE_URL = self.registration.scope;
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#4F46E5" />
-  <script src="https://cdn.tailwindcss.com"></script>
-  <title>Anime List - PWA Tracker</title>
-  
-  <style>
-    /* Custom Scrollbar & Dark Theme Background */
-    body {
-      background-color: #0f172a; /* Deep Slate */
-      color: #f8fafc;
-      font-family: 'Inter', sans-serif;
-    }
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-    ::-webkit-scrollbar-track {
-      background: #1e293b;
-    }
-    ::-webkit-scrollbar-thumb {
-      background: #4f46e5;
-      border-radius: 4px;
-    }
-  </style>
-</head>
+const urlsToCache = [
+  `${BASE_URL}`,
+  `${BASE_URL}index.html`,
+  `${BASE_URL}offline.html`,
+  `${BASE_URL}assets/style.css`,
+  `${BASE_URL}manifest.json`,
+  `${BASE_URL}icons/icone-anime 1024x1024.png`,
+  `${BASE_URL}icons/icone-anime 1024x1024.png`,
+];
 
-<body class="min-h-screen pb-20">
-  <header class="bg-indigo-600 p-6 text-center shadow-lg sticky top-0 z-50">
-    <h1 class="text-3xl font-bold tracking-tight">Anime List</h1>
-    <p class="text-indigo-200 text-sm mt-1">Personal Watchlist Tracker</p>
-  </header>
+// Install Service Worker & simpan file ke cache
+self.addEventListener("install", event => {
+  self.skipWaiting(); // langsung aktif tanpa reload manual
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => cache.addAll(urlsToCache))
+      .catch(err => console.error("Cache gagal dimuat:", err))
+  );
+});
 
-  <main class="max-w-6xl mx-auto p-4 sm:p-6">
-    <section class="mb-8">
-      <div class="relative max-w-md mx-auto">
-        <input type="text" id="searchInput" placeholder="Cari anime di list kamu..." 
-          class="w-full bg-slate-800 border border-slate-700 text-white rounded-full py-3 px-6 focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-          onkeyup="searchAnime()">
-      </div>
-    </section>
+// Aktivasi dan hapus cache lama
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    (async () => {
+      const keys = await caches.keys();
+      await Promise.all(
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            console.log("Menghapus cache lama:", key);
+            return caches.delete(key);
+          }
+        })
+      );
+      await self.clients.claim(); // langsung klaim kontrol ke halaman
+    })()
+  );
+});
 
-    <section class="flex flex-wrap justify-center gap-4 mb-8">
-      <button onclick="addAnime()" class="bg-indigo-500 hover:bg-indigo-400 px-6 py-2 rounded-lg font-semibold flex items-center gap-2 transition">
-        <span>+</span> Tambah Anime
-      </button>
-      <button onclick="exportData()" class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm transition">
-        Backup JSON
-      </button>
-      <label class="bg-slate-700 hover:bg-slate-600 px-4 py-2 rounded-lg text-sm cursor-pointer transition">
-        Restore
-        <input type="file" id="importFile" class="hidden" onchange="importData(event)">
-      </label>
-    </section>
+// Fetch event: cache-first untuk file lokal, network-first untuk API
+self.addEventListener("fetch", event => {
+  const request = event.request;
+  const url = new URL(request.url);
 
-    <div id="animeGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-      </div>
-  </main>
+  // Abaikan permintaan Chrome Extension, analytics, dll.
+  if (url.protocol.startsWith("chrome-extension")) return;
+  if (request.method !== "GET") return;
 
-  <div class="fixed bottom-4 right-4 flex flex-col gap-2">
-     <button onclick="alert('tombol testing hidup')" class="bg-pink-600 text-white p-3 rounded-full shadow-xl hover:scale-110 transition active:scale-95 text-xs">Test 1</button>
-  </div>
-
-  <footer class="text-center text-slate-500 text-xs mt-10 mb-4">
-    <p>© 2026 Anime List PWA • Anwar Fauzi</p>
-  </footer>
-
-  <script>
-    // --- Data Management ---
-    let myAnimeList = JSON.parse(localStorage.getItem('myAnimeData')) || [];
-
-    function saveToStorage() {
-      localStorage.setItem('myAnimeData', JSON.stringify(myAnimeList));
-      renderList();
-    }
-
-    // --- Features: CRUD & Tracking ---
-    function addAnime() {
-      const title = prompt("Masukkan Judul Anime:");
-      if (!title) return;
-      
-      const newAnime = {
-        id: Date.now(),
-        title: title,
-        status: 'Direncanakan',
-        episodes: 0,
-        totalEpisodes: 12,
-        rating: 0
-      };
-      
-      myAnimeList.push(newAnime);
-      saveToStorage();
-    }
-
-    function updateProgress(id, change) {
-      const anime = myAnimeList.find(a => a.id === id);
-      if (anime) {
-        anime.episodes = Math.max(0, anime.episodes + change);
-        saveToStorage();
-      }
-    }
-
-    function changeStatus(id, newStatus) {
-      const anime = myAnimeList.find(a => a.id === id);
-      if (anime) {
-        anime.status = newStatus;
-        saveToStorage();
-      }
-    }
-
-    function setRating(id, rate) {
-      const anime = myAnimeList.find(a => a.id === id);
-      if (anime) {
-        anime.rating = rate;
-        saveToStorage();
-      }
-    }
-
-    function deleteAnime(id) {
-      if(confirm('Hapus anime ini?')) {
-        myAnimeList = myAnimeList.filter(a => a.id !== id);
-        saveToStorage();
-      }
-    }
-
-    // --- Feature: Instant Search ---
-    function searchAnime() {
-      const query = document.getElementById('searchInput').value.toLowerCase();
-      renderList(query);
-    }
-
-    // --- UI Renderer ---
-    function renderList(filter = '') {
-      const grid = document.getElementById('animeGrid');
-      grid.innerHTML = '';
-
-      const filteredList = myAnimeList.filter(a => a.title.toLowerCase().includes(filter));
-
-      filteredList.forEach(anime => {
-        const card = document.createElement('div');
-        card.className = "bg-slate-800 rounded-xl overflow-hidden shadow-md border border-slate-700 flex flex-col";
-        card.innerHTML = `
-          <div class="p-4 flex-grow">
-            <div class="flex justify-between items-start mb-2">
-              <span class="text-xs font-bold uppercase px-2 py-1 rounded ${getStatusClass(anime.status)}">${anime.status}</span>
-              <button onclick="deleteAnime(${anime.id})" class="text-slate-500 hover:text-red-400">✕</button>
-            </div>
-            <h3 class="text-lg font-bold truncate">${anime.title}</h3>
-            
-            <div class="mt-4 flex items-center justify-between bg-slate-900 rounded-lg p-2">
-              <span class="text-sm text-slate-400">Progress</span>
-              <div class="flex items-center gap-3">
-                <button onclick="updateProgress(${anime.id}, -1)" class="bg-slate-700 px-2 rounded">-</button>
-                <span class="text-sm font-mono">${anime.episodes} / ${anime.totalEpisodes}</span>
-                <button onclick="updateProgress(${anime.id}, 1)" class="bg-slate-700 px-2 rounded">+</button>
-              </div>
-            </div>
-
-            <div class="mt-4">
-              <label class="text-xs text-slate-500">Ubah Status:</label>
-              <select onchange="changeStatus(${anime.id}, this.value)" class="w-full bg-slate-900 text-xs p-1 rounded mt-1 border-none outline-none">
-                <option value="Direncanakan" ${anime.status === 'Direncanakan' ? 'selected' : ''}>Plan to Watch</option>
-                <option value="Sedang Ditonton" ${anime.status === 'Sedang Ditonton' ? 'selected' : ''}>Watching</option>
-                <option value="Selesai" ${anime.status === 'Selesai' ? 'selected' : ''}>Completed</option>
-              </select>
-            </div>
-          </div>
-          <div class="bg-slate-900/50 p-3 flex justify-between items-center border-t border-slate-700">
-            <div class="flex gap-1">
-              ${[1,2,3,4,5].map(star => `
-                <span onclick="setRating(${anime.id}, ${star})" class="cursor-pointer ${anime.rating >= star ? 'text-yellow-400' : 'text-slate-600'}">★</span>
-              `).join('')}
-            </div>
-            <span class="text-[10px] text-slate-500 font-mono">${anime.id}</span>
-          </div>
-        `;
-        grid.appendChild(card);
-      });
-    }
-
-    function getStatusClass(status) {
-      if (status === 'Selesai') return 'bg-green-500/20 text-green-400';
-      if (status === 'Sedang Ditonton') return 'bg-blue-500/20 text-blue-400';
-      return 'bg-slate-500/20 text-slate-400';
-    }
-
-    // --- Feature: Backup & Restore ---
-    function exportData() {
-      const blob = new Blob([JSON.stringify(myAnimeList)], {type: 'application/json'});
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `anime-list-backup.json`;
-      a.click();
-    }
-
-    function importData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        myAnimeList = JSON.parse(e.target.result);
-        saveToStorage();
-      };
-      reader.readAsText(file);
-    }
-
-    // --- Service Worker Registration ---
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js')
-          .then(reg => console.log('SW terdaftar!', reg))
-          .catch(err => console.log('SW gagal:', err));
-      });
-    }
-
-    // Initial Render
-    renderList();
-  </script>
-</body>
-</html>
+  // File lokal (statis)
+  if (url.origin === self.location.origin) {
+    event.respondWith(
+      caches.match(request).then(response => {
+        return (
+          response ||
+          fetch(request).catch(() => caches.match(`${BASE_URL}offline.html`))
+        );
+      })
+    );
+  } 
+  // Resource eksternal (API, CDN, dsb.)
+  else {
+    event.respondWith(
+      fetch(request)
+        .then(networkResponse => {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(request, clone));
+          return networkResponse;
+        })
+        .catch(() => caches.match(request))
+    );
+  }
+});
