@@ -17,13 +17,13 @@
       "type": "image/png"
     },
     {
-      "src": "icons/anime 2-1024x1024.png",
+      "src": "icons/anime 512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     },
     {
-      "src": "icons/anime 2-1024x1024.png",
-      "sizes": "1024x1024",
+      "src": "icons/anime 192x192.png",
+      "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     }
