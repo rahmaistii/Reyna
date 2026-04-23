@@ -39,15 +39,15 @@
   ],
   "screenshots": [
     {
-      "src": "icons/screenshot1.png",
-      "sizes": "1080x1920",
+      "src": "icons/screnshoot-1.png",
+      "sizes": "1080x24000",
       "type": "image/png",
       "form_factor": "narrow",
       "label": "Tampilan Mobile Tracker Anime"
     },
     {
-      "src": "icons/screenshot-desktop.png",
-      "sizes": "1920x1080",
+      "src": "icons/screnshoot-2.png",
+      "sizes": "720x1600",
       "type": "image/png",
       "form_factor": "wide",
       "label": "Tampilan Desktop Tracker Anime"
