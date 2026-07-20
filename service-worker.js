@@ -1,14 +1,12 @@
-const CACHE_NAME = "pwa-template-v2";
-const BASE_URL = self.registration.scope;
+const CACHE_NAME = "pwa-template-v3";
 
 const urlsToCache = [
-  `${BASE_URL}`,
-  `${BASE_URL}index.html`,
-  `${BASE_URL}offline.html`,
-  `${BASE_URL}assets/style.css`,
-  `${BASE_URL}manifest.json`,
-  `${BASE_URL}icons/icon-192x192.png`,
-  `${BASE_URL}icons/icon-512x512.png`,
+  "./",
+  "./index.html",
+  "./offline.html",
+  "./assets/style.css",
+  "./manifest.json",
+  "./icons/icone-anime 1024x1024.png"
 ];
 
 // Install Service Worker & simpan file ke cache
@@ -54,7 +52,7 @@ self.addEventListener("fetch", event => {
       caches.match(request).then(response => {
         return (
           response ||
-          fetch(request).catch(() => caches.match(`${BASE_URL}offline.html`))
+          fetch(request).catch(() => caches.match("./offline.html"))
         );
       })
     );
