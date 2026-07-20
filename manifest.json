@@ -3,8 +3,8 @@
   "name": "Anime List Tracker",
   "short_name": "Anime List",
   "description": "Aplikasi tracker anime personal berbasis Progressive Web App.",
-  "start_url": "/",
-  "scope": "/",
+  "start_url": "/Reyna/",
+  "scope": "/Reyna/",
   "display": "standalone",
   "background_color": "#0f172a",
   "theme_color": "#4F46E5",
@@ -57,7 +57,7 @@
     {
       "name": "Buka Beranda",
       "short_name": "Home",
-      "url": "/",
+      "url": "/Reyna/",
       "description": "Langsung ke daftar anime Anda",
       "icons": [
         {
