@@ -79,34 +79,44 @@
       render();
     }
 
-    // --- JIKAN API SEARCH ---
+    // --- KITSU API SEARCH ---
     async function searchFromAPI() {
       const query = prompt("Cari anime (contoh: Solo Leveling):");
       if (!query || query.length < 3) return;
 
       try {
-        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=1`);
+        // Menggunakan Kitsu API
+        const res = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(query)}&page[limit]=1`);
+        
+        if (!res.ok) throw new Error("Gagal mengambil data dari server");
+
         const { data } = await res.json();
         
         if (data && data.length > 0) {
           const a = data[0];
+          const attr = a.attributes;
+
+          // Mapping data dari Kitsu ke format myAnimeList kamu
           const newAnime = {
-            id: a.mal_id,
-            title: a.title,
-            image: a.images.jpg.large_image_url,
+            id: Number(a.id),
+            title: attr.canonicalTitle || attr.titles.en || attr.titles.ja_jp,
+            image: attr.posterImage?.large || attr.posterImage?.original || '',
             status: 'Direncanakan',
             episodes: 0,
-            total: a.episodes || '?'
+            total: attr.episodeCount || '?'
           };
           
           if (!myAnimeList.some(item => item.id === newAnime.id)) {
             myAnimeList.push(newAnime);
-            save();
+            save(); // Simpan & Render ulang
           } else {
             alert("Sudah ada di daftar!");
           }
+        } else {
+          alert("Anime tidak ditemukan!");
         }
       } catch (err) {
+        console.error(err);
         alert("Gagal mengambil data. Coba lagi nanti.");
       }
     }
@@ -148,34 +158,3 @@
       const a = myAnimeList.find(i => i.id === id);
       if(a) { a.episodes = Math.max(0, a.episodes + change); save(); }
     }
-    function updateStatus(id, val) {
-      const a = myAnimeList.find(i => i.id === id);
-      if(a) { a.status = val; save(); }
-    }
-    function removeAnime(id) {
-      if(confirm('Hapus?')) { myAnimeList = myAnimeList.filter(i => i.id !== id); save(); }
-    }
-    function searchAnime() {
-      render(document.getElementById('searchInput').value);
-    }
-    function exportData() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myAnimeList));
-      const a = document.createElement('a');
-      a.setAttribute("href", dataStr);
-      a.setAttribute("download", "anime-list.json");
-      a.click();
-    }
-
-    // --- SERVICE WORKER REGISTRATION (Sesuai Codingan Awal Kamu) ---
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('./service-worker.js')
-        .then(() => console.log('SW registered!'))
-        .catch(err => console.error('SW gagal:', err));
-    }
-
-    // Load Data awal
-    render();
-  </script>
-
-</body>
-</html>
