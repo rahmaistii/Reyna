@@ -85,7 +85,6 @@
       if (!query || query.length < 3) return;
 
       try {
-        // Menggunakan Kitsu API
         const res = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(query)}&page[limit]=1`);
         
         if (!res.ok) throw new Error("Gagal mengambil data dari server");
