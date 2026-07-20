@@ -12,7 +12,7 @@
   <link rel="manifest" href="manifest.json" />
   
   <script src="https://cdn.tailwindcss.com"></script>
-  <link rel="icon" href="icons/icone-anime 1024x1024.png" type="image/png" />
+  <link rel="icon" href="icons/anime-1024x1024.png" type="image/png" />
   <title>Anime List - Are you ready</title>
 
   <style>
@@ -25,7 +25,6 @@
       background: #1e293b;
       border: 1px solid #334155;
     }
-    /* Menjaga aspek rasio gambar agar tidak pecah */
     .anime-poster {
       aspect-ratio: 2/3;
       object-fit: cover;
@@ -51,7 +50,7 @@
     <section class="mb-6">
       <div class="flex flex-col md:flex-row gap-4 justify-between items-center mb-6">
         <input type="text" id="searchInput" onkeyup="searchAnime()" placeholder="Cari di list tontonan..." 
-          class="w-full md:w-64 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500">
+          class="w-full md:w-64 bg-slate-800 border border-slate-700 rounded-lg px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-500 text-white">
         
         <div class="flex gap-2">
           <button onclick="searchFromAPI()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded-lg text-sm font-bold transition">
@@ -62,7 +61,7 @@
       </div>
 
       <div id="animeGrid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-        </div>
+      </div>
     </section>
   </main>
 
@@ -79,34 +78,48 @@
       render();
     }
 
-   // --- JIKAN API SEARCH ---
-   async function searchFromAPI() {
+    // --- FUNGSI CARI DI INPUT (FILTER LOKAL) ---
+    function searchAnime() {
+      const val = document.getElementById('searchInput').value;
+      render(val);
+    }
+
+    // --- KITSU API SEARCH (LEBIH STABIL DARI JIKAN) ---
+    async function searchFromAPI() {
       const query = prompt("Cari anime (contoh: Solo Leveling):");
-      if (!query || query.length < 3) return;
+      if (!query || query.trim().length < 2) return;
 
       try {
-        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=1`);
+        const res = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(query)}&page[limit]=1`);
+        
+        if (!res.ok) throw new Error("Gagal mengambil data dari server");
+
         const { data } = await res.json();
         
         if (data && data.length > 0) {
           const a = data[0];
+          const attr = a.attributes;
+
           const newAnime = {
-            id: a.mal_id,
-            title: a.title,
-            image: a.images.jpg.large_image_url,
+            id: Number(a.id),
+            title: attr.canonicalTitle || attr.titles.en || attr.titles.ja_jp,
+            image: attr.posterImage?.large || attr.posterImage?.original || '',
             status: 'Direncanakan',
             episodes: 0,
-            total: a.episodes || '?'
+            total: attr.episodeCount || '?'
           };
           
           if (!myAnimeList.some(item => item.id === newAnime.id)) {
             myAnimeList.push(newAnime);
             save();
           } else {
-            alert("Sudah ada di daftar!");
+            alert("Anime ini sudah ada di daftar!");
           }
+        } else {
+          alert("Anime tidak ditemukan!");
         }
       } catch (err) {
+        console.error(err);
         alert("Gagal mengambil data. Coba lagi nanti.");
       }
     }
@@ -118,20 +131,25 @@
       
       const filtered = myAnimeList.filter(a => a.title.toLowerCase().includes(filter.toLowerCase()));
 
+      if (filtered.length === 0) {
+        grid.innerHTML = `<p class="col-span-full text-center text-slate-500 py-10">Belum ada anime di daftar.</p>`;
+        return;
+      }
+
       filtered.forEach(anime => {
         grid.innerHTML += `
           <div class="main-card rounded-xl overflow-hidden flex flex-col shadow-lg border border-slate-700">
             <img src="${anime.image}" class="anime-poster w-full" alt="Poster">
             <div class="p-3 flex-grow">
-              <h3 class="text-sm font-bold line-clamp-2 mb-2 h-10">${anime.title}</h3>
-              <div class="flex items-center justify-between bg-black/30 p-2 rounded text-[10px] mb-2">
+              <h3 class="text-sm font-bold line-clamp-2 mb-2 h-10 text-white">${anime.title}</h3>
+              <div class="flex items-center justify-between bg-black/30 p-2 rounded text-[10px] text-slate-300 mb-2">
                 <span>Ep: ${anime.episodes}/${anime.total}</span>
                 <div class="flex gap-1">
-                  <button onclick="updateEp(${anime.id}, 1)" class="bg-indigo-600 px-2 rounded">+</button>
-                  <button onclick="updateEp(${anime.id}, -1)" class="bg-slate-700 px-2 rounded">-</button>
+                  <button onclick="updateEp(${anime.id}, 1)" class="bg-indigo-600 hover:bg-indigo-500 text-white px-2 rounded">+</button>
+                  <button onclick="updateEp(${anime.id}, -1)" class="bg-slate-700 hover:bg-slate-600 text-white px-2 rounded">-</button>
                 </div>
               </div>
-              <select onchange="updateStatus(${anime.id}, this.value)" class="w-full bg-slate-900 text-[10px] p-1 rounded border-none outline-none">
+              <select onchange="updateStatus(${anime.id}, this.value)" class="w-full bg-slate-900 text-slate-200 text-[10px] p-1 rounded border border-slate-700 outline-none">
                 <option value="Direncanakan" ${anime.status==='Direncanakan'?'selected':''}>Plan</option>
                 <option value="Sedang Ditonton" ${anime.status==='Sedang Ditonton'?'selected':''}>Watching</option>
                 <option value="Selesai" ${anime.status==='Selesai'?'selected':''}>Done</option>
@@ -143,8 +161,35 @@
       });
     }
 
-    // --- FUNGSI UPDATE ---
+    // --- FUNGSI UPDATE & HAPUS ---
     function updateEp(id, change) {
       const a = myAnimeList.find(i => i.id === id);
       if(a) { a.episodes = Math.max(0, a.episodes + change); save(); }
     }
+
+    function updateStatus(id, newStatus) {
+      const a = myAnimeList.find(i => i.id === id);
+      if(a) { a.status = newStatus; save(); }
+    }
+
+    function removeAnime(id) {
+      myAnimeList = myAnimeList.filter(i => i.id !== id);
+      save();
+    }
+
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(myAnimeList));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", "anime_list_backup.json");
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+
+    // Tampilkan data awal saat web pertama dibuka
+    render();
+  </script>
+</body>
+
+</html>
