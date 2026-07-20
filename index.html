@@ -79,43 +79,34 @@
       render();
     }
 
-    // --- KITSU API SEARCH ---
-    async function searchFromAPI() {
+   // --- JIKAN API SEARCH ---
+   async function searchFromAPI() {
       const query = prompt("Cari anime (contoh: Solo Leveling):");
       if (!query || query.length < 3) return;
 
       try {
-        const res = await fetch(`https://kitsu.io/api/edge/anime?filter[text]=${encodeURIComponent(query)}&page[limit]=1`);
-        
-        if (!res.ok) throw new Error("Gagal mengambil data dari server");
-
+        const res = await fetch(`https://api.jikan.moe/v4/anime?q=${query}&limit=1`);
         const { data } = await res.json();
         
         if (data && data.length > 0) {
           const a = data[0];
-          const attr = a.attributes;
-
-          // Mapping data dari Kitsu ke format myAnimeList kamu
           const newAnime = {
-            id: Number(a.id),
-            title: attr.canonicalTitle || attr.titles.en || attr.titles.ja_jp,
-            image: attr.posterImage?.large || attr.posterImage?.original || '',
+            id: a.mal_id,
+            title: a.title,
+            image: a.images.jpg.large_image_url,
             status: 'Direncanakan',
             episodes: 0,
-            total: attr.episodeCount || '?'
+            total: a.episodes || '?'
           };
           
           if (!myAnimeList.some(item => item.id === newAnime.id)) {
             myAnimeList.push(newAnime);
-            save(); // Simpan & Render ulang
+            save();
           } else {
             alert("Sudah ada di daftar!");
           }
-        } else {
-          alert("Anime tidak ditemukan!");
         }
       } catch (err) {
-        console.error(err);
         alert("Gagal mengambil data. Coba lagi nanti.");
       }
     }
